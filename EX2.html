@@ -1,169 +1,202 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Source Temperature Impact</title>
-    <style>
-        #plot {
-            float: right;
-        }
-        canvas {
-            border: 1px solid #000;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Impact of Source Temp</title>
+  <style>
+    
+    #experimentName {
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: blue; 
+    }
+
+   
+    .container {
+      margin: 20px;
+      display: flex;
+      flex-direction: row;
+    }
+
+    .input-container {
+      flex: 1;
+    }
+
+    input[type="number"] {
+      width: 150px;
+      margin-right: 10px;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 5px 10px;
+    }
+
+    #chartContainer {
+      margin-top: 20px;
+      flex: 2;
+    }
+
+    #resultContainer {
+      flex: 1;
+      
+      
+    }
+
+    #resultContainer p {
+      margin: 0;
+      
+    }
+
+    #resultContainer table {
+      width: 100%;
+      
+    }
+
+    #resultContainer th, #resultContainer td {
+      text-align: center;
+      padding: 5px;
+      
+    }
+  </style>
 </head>
 <body>
-    <h2>Source Temperature Impact</h2>
-    <label for="T_sink">Sink Temperature (°C):</label>
-    <input type="number" id="T_sink"><br><br>
-    
-    <label for="T_max">Max Source Temperature (°C):</label>
-    <input type="number" id="T_max"><br><br>
+  
+  <h1 id="experimentName">Analyze Impact of Source Temperature</h1><br><br>
 
-    <label for="n">Number of Data Points:</label>
-    <input type="number" id="n"><br><br>
-
-    <button onclick="showResult()">Show Result</button>
-    <button onclick="plotGraph()">Show Graph</button>
-    <button onclick="resetGraph()">Reset</button><br><br>
-
-    <div id="plot">
-        <canvas id="graph" width="400" height="300"></canvas>
+  <div class="container">
+    <div class="input-container">
+      <label for="sinkTemp">Sink Temperature (°C):</label><br>
+      <input type="number" id="sinkTemp" placeholder="Enter sink temp">
+      <br><br>
+      <label for="maxTemp">Max Source Temperature (°C):</label><br>
+      <input type="number" id="maxTemp" placeholder="Enter max source temperature">
+      <br><br>
+      <label for="dataPoints">Number of Data Points:</label><br>
+      <input type="number" id="dataPoints" placeholder="Enter number of data points">
+      <br><br>
+      <button onclick="calculate()">Show Result</button>
+      <button onclick="showGraph()">Show Graph</button>
+      <button onclick="resetForm()">Reset</button>
     </div>
+    <div id="resultContainer"></div>
+    <div id="chartContainer"></div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
+  <script>
+   
+    function K(t) {
+      return t + 273.15;
+    }
 
-    <script>
-        function K(t) {
-            return t + 273.15;
-        }
+    function calculate() {
+      var T_sink = parseFloat(document.getElementById("sinkTemp").value);
+      var T_max = parseFloat(document.getElementById("maxTemp").value);
+      var n = parseInt(document.getElementById("dataPoints").value);
 
-        // Custom function to generate an array of evenly spaced values
-        function linspace(start, stop, num) {
-            const step = (stop - start) / (num - 1);
-            const arr = [];
-            for (let i = 0; i < num; i++) {
-                arr.push(start + step * i);
-            }
-            return arr;
-        }
+      var T_source = [];
+      var eta = [];
 
-        function showResult() {
-            const T_sink = parseFloat(document.getElementById('T_sink').value);
-            const T_max = parseFloat(document.getElementById('T_max').value);
-            const n = parseInt(document.getElementById('n').value);
+      for (var i = T_sink; i <= T_max; i += (T_max - T_sink) / (n - 1)) {
+        T_source.push(i);
+        eta.push(1 - K(T_sink) / K(i));
+      }
 
-            const T_source = linspace(T_sink, T_max, n);
-            const eta = T_source.map(t => 1 - K(T_sink) / K(t));
+      var resultContainer = document.getElementById("resultContainer");
+      resultContainer.innerHTML = "";
 
-            // Display the results
-            let result = "<table><tr><th>T_source (°C)</th><th>eta (%)</th></tr>";
-            for (let i = 0; i < n; i++) {
-                result += `<tr><td>${T_source[i]}</td><td>${eta[i]}</td></tr>`;
-            }
-            result += "</table>";
+     
+      var resultTable = "<h3>Results:</h3>";
+      resultTable += "<table>";
+      resultTable += "<tr><th>T_source</th><th>Eta (%)</th></tr>";
+      for (var i = 0; i < T_source.length; i++) {
+        resultTable += "<tr><td>" + T_source[i].toFixed(2) + "</td><td>" + (eta[i] * 100).toFixed(2) + "</td></tr>";
+      }
+      resultTable += "</table>";
+      resultContainer.innerHTML = resultTable;
+    }
 
-            document.getElementById('result').innerHTML = result;
-        }
+    function showGraph() {
+      var T_sink = parseFloat(document.getElementById("sinkTemp").value);
+      var T_max = parseFloat(document.getElementById("maxTemp").value);
+      var n = parseInt(document.getElementById("dataPoints").value);
 
-       
-        function plotGraph() {
-            const T_sink = parseFloat(document.getElementById('T_sink').value);
-            const T_max = parseFloat(document.getElementById('T_max').value);
-            const n = parseInt(document.getElementById('n').value);
+      var T_source = [];
+      var eta = [];
 
-            const T_source = linspace(T_sink, T_max, n);
-            const eta = T_source.map(t => 1 - K(T_sink) / K(t));
+      for (var i = T_sink; i <= T_max; i += (T_max - T_sink) / (n - 1)) {
+        T_source.push(i);
+        eta.push(1 - K(T_sink) / K(i));
+      }
 
-            const canvas = document.getElementById('graph');
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width;
-            const height = canvas.height;
+      var chartContainer = document.getElementById("chartContainer");
+      chartContainer.innerHTML = "";
 
-            ctx.clearRect(0, 0, width, height);
+      var canvas = document.createElement("canvas");
+      chartContainer.appendChild(canvas);
 
-            const xScale = width / (T_max - T_sink);
-            const yScale = height / 1; // Scale for the range [0, 1]
+      var ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw x-axis
-            ctx.beginPath();
-            ctx.moveTo(0, height);
-            ctx.lineTo(width, height);
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            // Draw y-axis
-            ctx.beginPath();
-            ctx.moveTo(0, height);
-            ctx.lineTo(0, 0);
-            ctx.stroke();
+      var chart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: T_source.map(function(value) { return value.toFixed(2); }),
+          datasets: [{
+            label: "Eta (%)",
+            data: eta.map(function(value, index) { return { x: T_source[index].toFixed(2), y: (value * 100).toFixed(2) }; }),
+            borderColor: "red",
+            backgroundColor: "transparent",
+            pointBackgroundColor: "red",
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            pointHoverBackgroundColor: "red",
+            pointHoverBorderColor: "black"
+          }]
+        },
+        options: {
+          scales: {
+            xAxes: [{
+              scaleLabel: {
+                display: true,
+                labelString: "T_source"
+              }
+            }],
+            yAxes: [{
+              scaleLabel: {
+                display: true,
+                labelString: "Eta (%)"
+              }
+            }]
+          },
+          tooltips: {
+            callbacks: {
+              label: function(tooltipItem, data) {
+                var label = data.datasets[tooltipItem.datasetIndex].label || '';
 
-            ctx.beginPath();
-            ctx.moveTo(T_source[0] * xScale, height - eta[0] * yScale);
-            for (let i = 0; i < n; i++) {
-                // Draw circle
-                ctx.beginPath();
-                ctx.arc(T_source[i] * xScale, height - eta[i] * yScale, 5, 0, Math.PI * 2);
-                ctx.fillStyle = 'blue';
-                ctx.fill();
-                ctx.closePath();
-                // Draw connecting lines
-                if (i > 0) {
-                    ctx.beginPath();
-                    ctx.moveTo(T_source[i - 1] * xScale, height - eta[i - 1] * yScale);
-                    ctx.lineTo(T_source[i] * xScale, height - eta[i] * yScale);
-                    ctx.strokeStyle = 'red';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
+                if (label) {
+                  label += ': ';
                 }
+                label += tooltipItem.value;
+                return label;
+              }
             }
-
-            // Event handling for displaying values on hover
-            canvas.addEventListener('mousemove', function(event) {
-                const rect = canvas.getBoundingClientRect();
-                const mouseX = event.clientX - rect.left;
-                const mouseY = event.clientY - rect.top;
-
-                for (let i = 0; i < n; i++) {
-                    const circleX = T_source[i] * xScale;
-                    const circleY = height - eta[i] * yScale;
-                    const distance = Math.sqrt((mouseX - circleX) ** 2 + (mouseY - circleY) ** 2);
-                    if (distance <= 5) {
-                        ctx.clearRect(0, 0, width, 20);
-                        ctx.fillStyle = 'black';
-                        ctx.fillText(`T_source: ${T_source[i]}°C, eta: ${eta[i]}`, 10, 15);
-                        break;
-                    }
-                }
-            });
-
-            // Show x-axis and y-axis labels
-            ctx.fillStyle = 'black';
-            ctx.fillText("T_source (°C)", width / 2, height + 20);
-            ctx.fillText("eta", -20, height / 2);
-            ctx.fillText("0", 0, height + 20);
-            ctx.fillText("1", 0, 10);
-            ctx.fillText(T_sink, 0, height + 10);
-            ctx.fillText(T_max, width - 20, height + 10);
-            
-            document.getElementById('plot').style.display = 'block';
+          }
         }
+      });
+    }
 
-
-        function resetGraph() {
-            const canvas = document.getElementById('graph');
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width;
-            const height = canvas.height;
-
-            ctx.clearRect(0, 0, width, height);
-            document.getElementById('T_sink').value = '';
-            document.getElementById('T_max').value = '';
-            document.getElementById('n').value = '';
-            document.getElementById('result').innerHTML = '';
-            document.getElementById('plot').style.display = 'none';
-        }
-    </script>
-
-    <div id="result"></div>
+    function resetForm() {
+      document.getElementById("sinkTemp").value = "";
+      document.getElementById("maxTemp").value = "";
+      document.getElementById("dataPoints").value = "";
+      var resultContainer = document.getElementById("resultContainer");
+      resultContainer.innerHTML = "";
+      var chartContainer = document.getElementById("chartContainer");
+      chartContainer.innerHTML = "";
+    }
+  </script>
 </body>
 </html>
